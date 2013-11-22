@@ -43,15 +43,21 @@ class SceneHeight
 
         @_scene = new THREE.Scene()
 
-        ambient = new THREE.AmbientLight 0x0000ff
+        ambient = new THREE.AmbientLight 0x444444
         @_scene.add ambient
 
-        geom = new THREE.PlaneGeometry 512, 512, 10, 10
-        mat = @_getMaterial()#new THREE.MeshBasicMaterial { wireframe: true, color: 0xff00ff }
+        point = new THREE.PointLight 0x0000ff, 1, 2000
+        point.position.x = 100
+        point.position.y = 0
+        point.position.z = -1000
+        @_scene.add point
+
+        geom = new THREE.PlaneGeometry 512, 512, 50, 50
+        mat = @_getMaterial()
         @_plane = new THREE.Mesh geom, mat
         @_plane.position.z = -1000
-        # @_plane.rotation.x = 100
-        # @_plane.rotation.y = 100
+        @_plane.rotation.y = 1
+        @_plane.receiveShadows = true;
         @_scene.add @_plane
 
     _getMaterial: ->
@@ -62,6 +68,10 @@ class SceneHeight
             fragmentShader: shader.fragmentShader
             vertexShader: shader.vertexShader
             uniforms: @_uniforms
+            lights: true
+            color: 0xff00ff
+            wireframe: true
+            shading: THREE.FlatShading
 
         @_texture = new THREE.Texture @_canvas
         @_uniforms.uText.value = @_texture
@@ -76,14 +86,11 @@ class SceneHeight
 
         dx = mx - lmx
         dy = my - lmy
-        orientation = Math.atan2 dy, dx
-        length = Math.sqrt dx * dx + dy * dy
-
-        # @_orientation += ( orientation - @_orientation ) * .2
-        @_orientation = orientation
+        @_orientation = Math.atan2 dy, dx
+        length = Math.sqrt dx * dx + dy * dy        
 
         @_ctx.drawImage @_canvas, 0, 0
-        @_ctx.fillStyle = "rgba( 128, 128, 128, 1 )"
+        @_ctx.fillStyle = "rgba( 0, 0, 0, .05 )"
         @_ctx.fillRect 0, 0, @_size, @_size
 
         @_ctx.save()

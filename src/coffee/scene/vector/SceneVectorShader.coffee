@@ -1,4 +1,16 @@
-class SceneHeightShader
+class SceneVectorShader
+
+    attributes: {
+        aOrientation: {
+            type: "f"
+            value: []
+        },
+        aLength: {
+            type: "f"
+            value: []
+        }
+    }
+
 
     uniforms: THREE.UniformsUtils.merge( [
 
@@ -8,8 +20,6 @@ class SceneHeightShader
         THREE.UniformsLib[ "shadowmap" ]
 
         {
-            "uText": { type: "t", value: null }
-
             "ambient"  : { type: "c", value: new THREE.Color( 0xffffff ) }
             "emissive" : { type: "c", value: new THREE.Color( 0x000000 ) }
             "wrapRGB"  : { type: "v3", value: new THREE.Vector3( 1, 1, 1 ) }
@@ -22,9 +32,8 @@ class SceneHeightShader
         "#define LAMBERT"
 
         "varying vec3 vLightFront;"
-        "varying vec2 vUv;"
 
-        "uniform sampler2D uText;"
+        "attribute float aLength;"
 
         "#ifdef DOUBLE_SIDED"
 
@@ -40,6 +49,7 @@ class SceneHeightShader
         THREE.ShaderChunk[ "morphtarget_pars_vertex" ]
         THREE.ShaderChunk[ "skinning_pars_vertex" ]
         THREE.ShaderChunk[ "shadowmap_pars_vertex" ]
+
 
         "void main() {"
 
@@ -72,10 +82,9 @@ class SceneHeightShader
 
             "#if !defined( USE_SKINNING ) && ! defined( USE_MORPHTARGETS )"
 
-                "vec4 data = texture2D( uText, uv );"
                 "vec4 pos = vec4( position, 1.0 );"
-                # "pos.x += data.x * 30.0;"
-                "pos.z -= data.z * 30.0;"
+                # "pos.x += aLength * 2.0;"
+                "pos.z -= aLength * 2.0;"
 
                 "mvPosition = modelViewMatrix * pos;"
 
@@ -97,9 +106,6 @@ class SceneHeightShader
         "uniform float opacity;"
 
         "varying vec3 vLightFront;"
-        "varying vec2 vUv;"
-        
-        "uniform sampler2D uText;"
 
         "#ifdef DOUBLE_SIDED"
 

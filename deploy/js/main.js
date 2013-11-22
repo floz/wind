@@ -13,12 +13,29 @@ SceneVector = (function() {
 
   SceneVector.prototype._vectors = null;
 
+  SceneVector.prototype._renderer = null;
+
+  SceneVector.prototype._camera = null;
+
+  SceneVector.prototype._scene = null;
+
+  SceneVector.prototype._mat = null;
+
+  SceneVector.prototype._plane = null;
+
+  SceneVector.prototype._uniforms = null;
+
+  SceneVector.prototype._aOrientation = null;
+
+  SceneVector.prototype._aLength = null;
+
   function SceneVector() {
     this._canvas = document.getElementById("wind_vector");
     this._ctx = this._canvas.getContext("2d");
     this._size = this._canvas.width;
     this._sizeTile = this._size / this._step;
     this._createVectors();
+    this._initScene3D();
   }
 
   SceneVector.prototype._createVectors = function() {
@@ -37,12 +54,61 @@ SceneVector = (function() {
     }
   };
 
+  SceneVector.prototype._initScene3D = function() {
+    var ambient, container, geom, point;
+    this._renderer = new THREE.WebGLRenderer({
+      alpha: false
+    });
+    this._renderer.setClearColor(0x444444);
+    this._renderer.setSize(512, 512);
+    container = document.getElementById("wind_vector_3d");
+    container.appendChild(this._renderer.domElement);
+    this._camera = new THREE.PerspectiveCamera(45, 1, 1, 10000);
+    this._camera.position.set(0, 0, 0);
+    this._scene = new THREE.Scene();
+    ambient = new THREE.AmbientLight(0x444444);
+    this._scene.add(ambient);
+    point = new THREE.PointLight(0x00ff00, 1, 2000);
+    point.position.x = 100;
+    point.position.y = 0;
+    point.position.z = -1000;
+    this._scene.add(point);
+    geom = new THREE.PlaneGeometry(512, 512, this._step, this._step);
+    this._mat = this._getMaterial();
+    this._plane = new THREE.Mesh(geom, this._mat);
+    this._plane.position.z = -1000;
+    this._plane.rotation.y = 1;
+    this._plane.receiveShadows = true;
+    return this._scene.add(this._plane);
+  };
+
+  SceneVector.prototype._getMaterial = function() {
+    var params, shader;
+    shader = new SceneVectorShader();
+    this._uniforms = shader.uniforms;
+    this._attributes = shader.attributes;
+    params = {
+      fragmentShader: shader.fragmentShader,
+      vertexShader: shader.vertexShader,
+      uniforms: this._uniforms,
+      attributes: this._attributes,
+      lights: true,
+      color: 0xff00ff,
+      wireframe: true,
+      shading: THREE.FlatShading
+    };
+    this._aOrientation = this._attributes.aOrientation.value;
+    this._aLength = this._attributes.aLength.value;
+    return new THREE.ShaderMaterial(params);
+  };
+
   SceneVector.prototype.update = function() {
     this._updateVector();
     this._ctx.fillStyle = "#000";
     this._ctx.fillRect(0, 0, this._size, this._size);
     this._drawGrid();
-    return this._drawVector();
+    this._drawVector();
+    return this._renderer.render(this._scene, this._camera);
   };
 
   SceneVector.prototype._updateVector = function() {
@@ -61,7 +127,10 @@ SceneVector = (function() {
       ratio = this._bellCurve(ratio * 2);
       vector.add(orientation, length, ratio);
       vector.update();
+      this._aOrientation[i] = vector.orientation;
+      this._aLength[i] = vector.length;
     }
+    return this._attributes.aLength.needsUpdate = true;
   };
 
   SceneVector.prototype._bellCurve = function(value) {
@@ -156,6 +225,47 @@ Vector = (function() {
 
 })();
 
+var SceneVectorShader;
+
+SceneVectorShader = (function() {
+  function SceneVectorShader() {}
+
+  SceneVectorShader.prototype.attributes = {
+    aOrientation: {
+      type: "f",
+      value: []
+    },
+    aLength: {
+      type: "f",
+      value: []
+    }
+  };
+
+  SceneVectorShader.prototype.uniforms = THREE.UniformsUtils.merge([
+    THREE.UniformsLib["common"], THREE.UniformsLib["fog"], THREE.UniformsLib["lights"], THREE.UniformsLib["shadowmap"], {
+      "ambient": {
+        type: "c",
+        value: new THREE.Color(0xffffff)
+      },
+      "emissive": {
+        type: "c",
+        value: new THREE.Color(0x000000)
+      },
+      "wrapRGB": {
+        type: "v3",
+        value: new THREE.Vector3(1, 1, 1)
+      }
+    }
+  ]);
+
+  SceneVectorShader.prototype.vertexShader = ["#define LAMBERT", "varying vec3 vLightFront;", "attribute float aLength;", "#ifdef DOUBLE_SIDED", "varying vec3 vLightBack;", "#endif", THREE.ShaderChunk["map_pars_vertex"], THREE.ShaderChunk["lightmap_pars_vertex"], THREE.ShaderChunk["envmap_pars_vertex"], THREE.ShaderChunk["lights_lambert_pars_vertex"], THREE.ShaderChunk["color_pars_vertex"], THREE.ShaderChunk["morphtarget_pars_vertex"], THREE.ShaderChunk["skinning_pars_vertex"], THREE.ShaderChunk["shadowmap_pars_vertex"], "void main() {", THREE.ShaderChunk["map_vertex"], THREE.ShaderChunk["lightmap_vertex"], THREE.ShaderChunk["color_vertex"], THREE.ShaderChunk["morphnormal_vertex"], THREE.ShaderChunk["skinbase_vertex"], THREE.ShaderChunk["skinnormal_vertex"], THREE.ShaderChunk["defaultnormal_vertex"], THREE.ShaderChunk["morphtarget_vertex"], THREE.ShaderChunk["skinning_vertex"], "vec4 mvPosition;", "#ifdef USE_SKINNING", "mvPosition = modelViewMatrix * skinned;", "#endif", "#if !defined( USE_SKINNING ) && defined( USE_MORPHTARGETS )", "mvPosition = modelViewMatrix * vec4( morphed, 1.0 );", "#endif", "#if !defined( USE_SKINNING ) && ! defined( USE_MORPHTARGETS )", "vec4 pos = vec4( position, 1.0 );", "pos.z -= aLength * 2.0;", "mvPosition = modelViewMatrix * pos;", "#endif", "gl_Position = projectionMatrix * mvPosition;", THREE.ShaderChunk["worldpos_vertex"], THREE.ShaderChunk["envmap_vertex"], THREE.ShaderChunk["lights_lambert_vertex"], THREE.ShaderChunk["shadowmap_vertex"], "}"].join("\n");
+
+  SceneVectorShader.prototype.fragmentShader = ["uniform float opacity;", "varying vec3 vLightFront;", "#ifdef DOUBLE_SIDED", "varying vec3 vLightBack;", "#endif", THREE.ShaderChunk["color_pars_fragment"], THREE.ShaderChunk["map_pars_fragment"], THREE.ShaderChunk["lightmap_pars_fragment"], THREE.ShaderChunk["envmap_pars_fragment"], THREE.ShaderChunk["fog_pars_fragment"], THREE.ShaderChunk["shadowmap_pars_fragment"], THREE.ShaderChunk["specularmap_pars_fragment"], "void main() {", "gl_FragColor = vec4( vec3 ( 1.0 ), opacity );", THREE.ShaderChunk["map_fragment"], THREE.ShaderChunk["alphatest_fragment"], THREE.ShaderChunk["specularmap_fragment"], "#ifdef DOUBLE_SIDED", "if ( gl_FrontFacing )", "gl_FragColor.xyz *= vLightFront;", "else", "gl_FragColor.xyz *= vLightBack;", "#else", "gl_FragColor.xyz *= vLightFront;", "#endif", THREE.ShaderChunk["lightmap_fragment"], THREE.ShaderChunk["color_fragment"], THREE.ShaderChunk["envmap_fragment"], THREE.ShaderChunk["shadowmap_fragment"], THREE.ShaderChunk["linear_to_gamma_fragment"], THREE.ShaderChunk["fog_fragment"], "}"].join("\n");
+
+  return SceneVectorShader;
+
+})();
+
 var SceneHeight;
 
 SceneHeight = (function() {
@@ -200,7 +310,7 @@ SceneHeight = (function() {
   }
 
   SceneHeight.prototype._initScene3D = function() {
-    var ambient, container, geom, mat;
+    var ambient, container, geom, mat, point;
     this._renderer = new THREE.WebGLRenderer({
       alpha: false
     });
@@ -211,12 +321,19 @@ SceneHeight = (function() {
     this._camera = new THREE.PerspectiveCamera(45, 1, 1, 10000);
     this._camera.position.set(0, 0, 0);
     this._scene = new THREE.Scene();
-    ambient = new THREE.AmbientLight(0x0000ff);
+    ambient = new THREE.AmbientLight(0x444444);
     this._scene.add(ambient);
-    geom = new THREE.PlaneGeometry(512, 512, 10, 10);
+    point = new THREE.PointLight(0x0000ff, 1, 2000);
+    point.position.x = 100;
+    point.position.y = 0;
+    point.position.z = -1000;
+    this._scene.add(point);
+    geom = new THREE.PlaneGeometry(512, 512, 50, 50);
     mat = this._getMaterial();
     this._plane = new THREE.Mesh(geom, mat);
     this._plane.position.z = -1000;
+    this._plane.rotation.y = 1;
+    this._plane.receiveShadows = true;
     return this._scene.add(this._plane);
   };
 
@@ -227,7 +344,11 @@ SceneHeight = (function() {
     params = {
       fragmentShader: shader.fragmentShader,
       vertexShader: shader.vertexShader,
-      uniforms: this._uniforms
+      uniforms: this._uniforms,
+      lights: true,
+      color: 0xff00ff,
+      wireframe: true,
+      shading: THREE.FlatShading
     };
     this._texture = new THREE.Texture(this._canvas);
     this._uniforms.uText.value = this._texture;
@@ -235,18 +356,17 @@ SceneHeight = (function() {
   };
 
   SceneHeight.prototype.update = function() {
-    var dx, dy, length, lmx, lmy, mx, my, orientation;
+    var dx, dy, length, lmx, lmy, mx, my;
     lmx = stage.lastMouse.x - 512;
     lmy = stage.lastMouse.y;
     mx = stage.mouse.x - 512;
     my = stage.mouse.y;
     dx = mx - lmx;
     dy = my - lmy;
-    orientation = Math.atan2(dy, dx);
+    this._orientation = Math.atan2(dy, dx);
     length = Math.sqrt(dx * dx + dy * dy);
-    this._orientation = orientation;
     this._ctx.drawImage(this._canvas, 0, 0);
-    this._ctx.fillStyle = "rgba( 128, 128, 128, 1 )";
+    this._ctx.fillStyle = "rgba( 0, 0, 0, .05 )";
     this._ctx.fillRect(0, 0, this._size, this._size);
     this._ctx.save();
     this._ctx.translate(mx, my);
@@ -265,16 +385,30 @@ var SceneHeightShader;
 SceneHeightShader = (function() {
   function SceneHeightShader() {}
 
-  SceneHeightShader.prototype.uniforms = {
-    "uText": {
-      type: "t",
-      value: null
+  SceneHeightShader.prototype.uniforms = THREE.UniformsUtils.merge([
+    THREE.UniformsLib["common"], THREE.UniformsLib["fog"], THREE.UniformsLib["lights"], THREE.UniformsLib["shadowmap"], {
+      "uText": {
+        type: "t",
+        value: null
+      },
+      "ambient": {
+        type: "c",
+        value: new THREE.Color(0xffffff)
+      },
+      "emissive": {
+        type: "c",
+        value: new THREE.Color(0x000000)
+      },
+      "wrapRGB": {
+        type: "v3",
+        value: new THREE.Vector3(1, 1, 1)
+      }
     }
-  };
+  ]);
 
-  SceneHeightShader.prototype.vertexShader = ["uniform sampler2D uText;", "varying vec2 vUv;", "void main() {", "vec4 data = texture2D( uText, uv );", "vec4 pos = vec4( position, 1.0 );", "pos.x += data.x * 100.0;", "pos.y += data.y * 100.0;", "vUv = uv;", "vec4 mvPosition = modelViewMatrix * pos;", "gl_Position = projectionMatrix * mvPosition;", "}"].join("\n");
+  SceneHeightShader.prototype.vertexShader = ["#define LAMBERT", "varying vec3 vLightFront;", "varying vec2 vUv;", "uniform sampler2D uText;", "#ifdef DOUBLE_SIDED", "varying vec3 vLightBack;", "#endif", THREE.ShaderChunk["map_pars_vertex"], THREE.ShaderChunk["lightmap_pars_vertex"], THREE.ShaderChunk["envmap_pars_vertex"], THREE.ShaderChunk["lights_lambert_pars_vertex"], THREE.ShaderChunk["color_pars_vertex"], THREE.ShaderChunk["morphtarget_pars_vertex"], THREE.ShaderChunk["skinning_pars_vertex"], THREE.ShaderChunk["shadowmap_pars_vertex"], "void main() {", THREE.ShaderChunk["map_vertex"], THREE.ShaderChunk["lightmap_vertex"], THREE.ShaderChunk["color_vertex"], THREE.ShaderChunk["morphnormal_vertex"], THREE.ShaderChunk["skinbase_vertex"], THREE.ShaderChunk["skinnormal_vertex"], THREE.ShaderChunk["defaultnormal_vertex"], THREE.ShaderChunk["morphtarget_vertex"], THREE.ShaderChunk["skinning_vertex"], "vec4 mvPosition;", "#ifdef USE_SKINNING", "mvPosition = modelViewMatrix * skinned;", "#endif", "#if !defined( USE_SKINNING ) && defined( USE_MORPHTARGETS )", "mvPosition = modelViewMatrix * vec4( morphed, 1.0 );", "#endif", "#if !defined( USE_SKINNING ) && ! defined( USE_MORPHTARGETS )", "vec4 data = texture2D( uText, uv );", "vec4 pos = vec4( position, 1.0 );", "pos.z -= data.z * 30.0;", "mvPosition = modelViewMatrix * pos;", "#endif", "gl_Position = projectionMatrix * mvPosition;", THREE.ShaderChunk["worldpos_vertex"], THREE.ShaderChunk["envmap_vertex"], THREE.ShaderChunk["lights_lambert_vertex"], THREE.ShaderChunk["shadowmap_vertex"], "}"].join("\n");
 
-  SceneHeightShader.prototype.fragmentShader = ["uniform sampler2D uText;", "varying vec2 vUv;", "void main() {", "gl_FragColor = vec4( texture2D( uText, vUv ).rgb, 1.0 );", "}"].join("\n");
+  SceneHeightShader.prototype.fragmentShader = ["uniform float opacity;", "varying vec3 vLightFront;", "varying vec2 vUv;", "uniform sampler2D uText;", "#ifdef DOUBLE_SIDED", "varying vec3 vLightBack;", "#endif", THREE.ShaderChunk["color_pars_fragment"], THREE.ShaderChunk["map_pars_fragment"], THREE.ShaderChunk["lightmap_pars_fragment"], THREE.ShaderChunk["envmap_pars_fragment"], THREE.ShaderChunk["fog_pars_fragment"], THREE.ShaderChunk["shadowmap_pars_fragment"], THREE.ShaderChunk["specularmap_pars_fragment"], "void main() {", "gl_FragColor = vec4( vec3 ( 1.0 ), opacity );", THREE.ShaderChunk["map_fragment"], THREE.ShaderChunk["alphatest_fragment"], THREE.ShaderChunk["specularmap_fragment"], "#ifdef DOUBLE_SIDED", "if ( gl_FrontFacing )", "gl_FragColor.xyz *= vLightFront;", "else", "gl_FragColor.xyz *= vLightBack;", "#else", "gl_FragColor.xyz *= vLightFront;", "#endif", THREE.ShaderChunk["lightmap_fragment"], THREE.ShaderChunk["color_fragment"], THREE.ShaderChunk["envmap_fragment"], THREE.ShaderChunk["shadowmap_fragment"], THREE.ShaderChunk["linear_to_gamma_fragment"], THREE.ShaderChunk["fog_fragment"], "}"].join("\n");
 
   return SceneHeightShader;
 
