@@ -25,7 +25,7 @@ class SceneHeight
         @_textW = @_textDisplacement.width
         @_textH = @_textDisplacement.height
 
-        @_ctx.fillStyle = "rgba( 128, 128, 128, 1 )"
+        @_ctx.fillStyle = "rgba( 0, 0, 0, 1 )"
         @_ctx.fillRect 0, 0, @_size, @_size
 
         @_initScene3D()
@@ -90,7 +90,7 @@ class SceneHeight
         length = Math.sqrt dx * dx + dy * dy        
 
         @_ctx.drawImage @_canvas, 0, 0
-        @_ctx.fillStyle = "rgba( 0, 0, 0, .05 )"
+        @_ctx.fillStyle = "rgba( 0, 0, 0, .035 )"
         @_ctx.fillRect 0, 0, @_size, @_size
 
         @_ctx.save()

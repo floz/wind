@@ -75,7 +75,7 @@ class SceneHeightShader
                 "vec4 data = texture2D( uText, uv );"
                 "vec4 pos = vec4( position, 1.0 );"
                 # "pos.x += data.x * 30.0;"
-                "pos.z -= data.z * 30.0;"
+                "pos.z -= data.z * 60.0;"
 
                 "mvPosition = modelViewMatrix * pos;"
 

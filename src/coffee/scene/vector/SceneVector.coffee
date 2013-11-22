@@ -5,7 +5,7 @@ class SceneVector
     _size: 0
 
     _sizeTile: 0
-    _step: 32 
+    _step: 50 
 
     _vectors: null
 
@@ -43,6 +43,8 @@ class SceneVector
 
             px = 0
             py += @_sizeTile
+
+        console.log @_vectors.length
 
         return
 
