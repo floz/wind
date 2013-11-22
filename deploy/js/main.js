@@ -371,6 +371,7 @@ SceneHeight = (function() {
     this._ctx.fillRect(0, 0, this._size, this._size);
     this._ctx.save();
     this._ctx.translate(mx, my);
+    this._ctx.rotate(this._orientation);
     this._ctx.drawImage(this._textDisplacement, -this._textW >> 1, -this._textH >> 1);
     this._ctx.restore();
     this._texture.needsUpdate = true;

@@ -87,7 +87,7 @@ class SceneHeight
         dx = mx - lmx
         dy = my - lmy
         @_orientation = Math.atan2 dy, dx
-        length = Math.sqrt dx * dx + dy * dy        
+        length = Math.sqrt dx * dx + dy * dy
 
         @_ctx.drawImage @_canvas, 0, 0
         @_ctx.fillStyle = "rgba( 0, 0, 0, .035 )"
@@ -95,7 +95,7 @@ class SceneHeight
 
         @_ctx.save()
         @_ctx.translate mx, my
-        # @_ctx.rotate @_orientation
+        @_ctx.rotate @_orientation
         @_ctx.drawImage @_textDisplacement, -@_textW >> 1, -@_textH >> 1
         @_ctx.restore()
 
