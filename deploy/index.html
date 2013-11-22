@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, width=device-width">
+
+    <title>Wind Research</title>
+
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/main.css">
+
+  </head>
+  <body>
+    <div id="scene">
+      <canvas id="wind_vector" width="512" height="512"></canvas>
+      <canvas id="wind_height_map" width="512" height="512"></canvas>
+    </div>
+    <div id="scene3d">
+      <div id="wind_vector_3d"></div>
+      <div id="wind_height_map_3d"></div>
+    </div>
+
+    <div id="textures">
+      <img id="texture--displacement" src="img/displacement.png" width="100" height="98"/>
+      <img id="texture--test" src="img/test.png" width="512" height="512"/>
+    </div>
+
+    <script type="text/javascript" src="js/vendor/RequestAnimationFrame.js"></script>
+    <script type="text/javascript" src="js/vendor/jquery/jquery.min.js"></script>
+    <script type="text/javascript" src="js/vendor/three.min.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
+
+  </body>
+</html>

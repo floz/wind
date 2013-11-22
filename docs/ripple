@@ -1,0 +1,54 @@
+void main(void)
+{
+	vec2 uv = gl_FragCoord.xy / iResolution.xy;
+	
+	float w = (0.5 - (uv.x)) * (iResolution.x / iResolution.y);
+    float h = 0.5 - uv.y;
+	vec2 dv = vec2(w,h);
+	float distanceFromCenter = sqrt(dot(dv,dv));
+	
+	float sinArg = distanceFromCenter * 10.0 - iGlobalTime * 10.0;
+	float slope = cos(sinArg) ;
+	vec4 color = texture2D(iChannel0, uv + normalize(vec2(w, h)) * slope * 0.01);
+	
+	gl_FragColor = color;
+}
+
+//
+
+void main(void)
+{
+	vec2 uv = gl_FragCoord.xy / iResolution.xy;
+	
+	float w = (0.5 - (uv.x)) * (iResolution.x / iResolution.y);
+    float h = 0.5 - uv.y;
+	float distanceFromCenter = sqrt(w * w + h * h);
+	
+	float sinArg = distanceFromCenter * 10.0 - iGlobalTime * 10.0;
+	float slope = cos(sinArg) ;
+	vec4 color = texture2D(iChannel0, uv + normalize(vec2(w, h)) * slope * 0.05);
+	
+	gl_FragColor = color;
+}
+https://www.shadertoy.com/view/lds3RH
+
+//
+
+#ifdef GL_ES
+precision highp float;
+#endif
+
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D tex;
+
+void main(void) {
+	vec2 cPos = -1.0 + 2.0 * gl_FragCoord.xy / resolution.xy;
+	float cLength = length(cPos);
+
+	vec2 uv = gl_FragCoord.xy/resolution.xy+(cPos/cLength)*cos(cLength*12.0-time*4.0)*0.03;
+	vec3 col = texture2D(tex,uv).xyz;
+
+	gl_FragColor = vec4(col,1.0);
+}
+http://adrianboeing.blogspot.com/2011/02/ripple-effect-in-webgl.html

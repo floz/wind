@@ -1,0 +1,23 @@
+body {
+    background:#fff;
+    padding:0;
+    margin:0;
+    font-weight: bold;
+    overflow:hidden;
+}
+
+#scene,
+#scene3d {
+    overflow: hidden;
+}
+
+canvas,
+#scene3d > div {
+    float: left;
+    width: 512px;
+    height: 512px;
+}
+
+#textures {
+    display: none;
+}

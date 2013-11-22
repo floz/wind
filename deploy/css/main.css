@@ -1,0 +1,27 @@
+/* line 1, ../../src/sass/main.scss */
+body {
+  background: #fff;
+  padding: 0;
+  margin: 0;
+  font-weight: bold;
+  overflow: hidden;
+}
+
+/* line 10, ../../src/sass/main.scss */
+#scene,
+#scene3d {
+  overflow: hidden;
+}
+
+/* line 15, ../../src/sass/main.scss */
+canvas,
+#scene3d > div {
+  float: left;
+  width: 512px;
+  height: 512px;
+}
+
+/* line 21, ../../src/sass/main.scss */
+#textures {
+  display: none;
+}
